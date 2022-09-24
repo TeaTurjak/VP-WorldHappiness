@@ -1,5 +1,5 @@
 # WorldHappiness - Data Visualisation Project
-- This repository was used for the purpose of completing the designated task required for completing the collage course Data Visualisation at FERIT university in 2021/2022.
+- This repository was used for the purpose of completing the designated task required for the collage course Data Visualisation at FERIT university in 2021/2022.
 
 - The topic of this project task was to create a data visualization regarding the life happiness of citizens in different countries. Data used was collected in the time period from 2019 to 2022. The knowledge gained in the laboratory exercises from the course "Data Visualization" and additional knowledge gained via the Internet were used during the creation of this task.
 
