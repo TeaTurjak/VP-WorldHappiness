@@ -1,0 +1,410 @@
+<DOCTYPE html>
+  <!--https://moodle.srce.hr/2021-2022/course/view.php?id=101775-->
+  <head>
+    <meta charset="utf-8">
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+    <script src="https://d3js.org/d3-geo-projection.v2.min.js"></script>
+
+    <!--https://www.w3schools.com/html/html_styles.asp
+        https://www.w3schools.com/cssref/css_websafe_fonts.asp
+        https://www.rapidtables.com/web/color/RGB_Color.html
+        https://stackoverflow.com/questions/16754608/cause-line-to-wrap-to-new-line-after-100-characters
+        https://stackoverflow.com/questions/20780188/two-divs-in-same-row
+        https://www.w3schools.com/tags/tag_center.asp
+        https://stackoverflow.com/questions/5671519/arranging-div-one-below-the-other
+        https://www.tutorialspoint.com/css/css_positioning.html
+    -->
+    <style>
+      h1 { text-align: center;
+           font-family: Arial, sans-serif; }
+      
+      #ptitle { font-family: Arial, sans-serif;
+                max-width:650px;
+                word-wrap:break-word; }
+
+      #paverage { font-family: Arial, sans-serif;
+                  max-width:650px;
+                  word-wrap:break-word; }
+
+      #currentlyover  { font-family: Arial, sans-serif; }
+
+      text  { font-family: Arial, sans-serif; }
+
+      button  { font-family: Arial, sans-serif; } 
+
+      div.container { width:100%; }
+
+      div.mapPosition { float: left;
+                        width:50%; } 
+
+      div.graphPosition { float: right; 
+                          width:50%; }
+   
+      #currentCountry { float: left;
+                        clear:left; }
+  
+      .bar  { fill: #062868;  }
+
+      .bar:hover  { fill: #6082B6;  }
+
+      #tooltip {  font-family: Arial, sans-serif;
+                  background-color: #ecf0f1;
+                  visibility: hidden;
+                  position: absolute;
+                  opacity: 0.8;
+                  padding: 10px;
+                  vertical-align: middle;
+                  border-radius: 5px;
+                  text-align: center;
+                  width: 180px; }
+
+      .path { shape-rendering: crispEdges;  }
+
+      .path.active  { fill: #B768A2;  }
+
+    </style>
+   
+  </head>
+
+  <body style="background-color:#EAEAEA;">
+    
+    <h1> World happiness in countries from 2019 to 2022</h1>
+
+    <div class='container'>
+      <div class="mapPosition">
+        <svg id="worldMap" width="725" height="600"></svg>
+      </div>
+
+      <div class="graphPosition">
+        <p id="currentlyover" style="font-size:120%; background-color:#7CC4EE; width: 650px;">Currently over:</p>
+        
+        <div class='currentCountry'>
+          <!--https://d3-graph-gallery.com/graph/barplot_button_data_simple.html-->
+          <button id="btn1" style="background: #7CC4EE; width: 100px; position:relative; left:110px;">2019</button>
+          <button id="btn2" style="background: #7CC4EE; width: 100px; position:relative; left:110px;">2020</button>
+          <button id="btn3" style="background: #7CC4EE; width: 100px; position:relative; left:110px;">2021</button>
+          <button id="btn4" style="background: #7CC4EE; width: 100px; position:relative; left:110px;">2022</button>
+          
+          <p id="ptitle" style="font-size:160%; position:relative; left:40px;"></p>
+          <svg id="my_dataviz" width="700" height="350" style="position:relative; left:40px;"></svg>
+        </div>
+        
+        <p id="paverage" style="font-size:150%; position:relative; left:40px;"></p>
+        
+      </div>
+    </div>
+    
+    <script>
+      //https://d3-graph-gallery.com/graph/choropleth_basic.html
+      var svg = d3.select("svg"),
+        width = +svg.attr("width"),
+        height = +svg.attr("height");
+
+      svg.append("rect")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .attr("fill", "lightblue")
+        .attr("stroke", "black")
+        .attr("stroke-width", "3");
+
+      var projection = d3.geoMercator()
+        .scale(115)
+        .center([0, 20])
+        .translate([width / 2, height / 2])
+        .rotate([0, 0]);
+
+      var path = d3.geoPath()
+        .projection(projection);
+
+      var data = d3.map();
+
+      var color = d3.scaleLinear()
+        .domain([1, 10])
+        .range(["#1CB5E0", "#000046"]);
+
+      d3.queue()
+        .defer(d3.json,"https://raw.githubusercontent.com/TeaTurjak/VP-WorldHappiness/main/worldMap1")
+        .await(ready);
+
+      d3.select("body").append("div")
+        .attr("id", "topo");
+
+      function ready(error, topo) {
+        svg.append("g")
+          .selectAll("path")
+          .data(topo.features)
+          .enter()
+          .append("path")
+          .attr("class", "path")
+          .attr("d", d3.geoPath().projection(projection))
+          .style("stroke", "white")
+          .style("stroke-width", 0.2)
+          .style("stroke-opacity", 1)
+
+          .attr("fill", function (d) {
+              var value = (parseFloat(d.properties.happinessScore2019) + parseFloat(d.properties.happinessScore2020) + parseFloat(d.properties.happinessScore2021) + parseFloat(d.properties.happinessScore2022)) / 4;
+              if (value == 0) {
+                return "white";
+              }
+              else {
+                return color(value);
+              }
+          })
+
+          //https://stackoverflow.com/questions/15709304/d3-color-change-on-mouseover-using-classedactive-true
+          .on("mouseover",function(d){
+            d3.select("#currentlyover")
+                .text("Currently over: " + d.properties.name)
+            d3.select(this)
+              .attr('fill', null) 
+              .classed("active", true ) 
+          })
+
+          .on("mouseout",function(d){
+            d3.select("#currentlyover")
+                .text("Currently over:")
+            d3.select(this)
+              .classed("active", false)
+              .attr("fill", function (d) {
+                var value = (parseFloat(d.properties.happinessScore2019) + parseFloat(d.properties.happinessScore2020) + parseFloat(d.properties.happinessScore2021) + parseFloat(d.properties.happinessScore2022)) / 4;
+                if (value == 0) {
+                  return "white";
+                }
+                else {
+                  return color(value);
+                }
+            })
+          })
+
+          .on("click", function(d){
+
+            //https://stackoverflow.com/questions/22382984/deleting-d3-svg-elements-for-redraw
+            d3.selectAll("#my_dataviz>*").remove();
+
+            textAverage=""
+            //https://stackoverflow.com/questions/6134039/format-number-to-always-show-2-decimal-places
+            var value=parseFloat((parseFloat(d.properties.happinessScore2019) + parseFloat(d.properties.happinessScore2020) + parseFloat(d.properties.happinessScore2021) + parseFloat(d.properties.happinessScore2022)) / 4).toFixed(2);
+            if(value==0){
+                textAverage="";
+            }
+            else{
+              textAverage="Average happiness score for "+d.properties.name + " is: " + value;
+            }
+                
+            d3.select("#paverage")
+              .text(textAverage);
+
+            //https://marcwie.github.io/blog/responsive-bar-chart-d3/
+            const tooltip = d3.select("body")
+                              .append("div")
+                              .attr("id", "tooltip")
+                              .style("left", event.pageX+30+"px")
+
+
+            var countryName = d.properties.name;
+
+
+            //https://d3-graph-gallery.com/graph/barplot_button_data_simple.html
+            var data2019 = [
+                {group: "GDP", value: d.properties.GDPperCapita2019, text: "GDP per capita"},
+                {group: "SUPPORT", value: d.properties.socialSupport2019, text: "Social support"},
+                {group: "HEALTH", value: d.properties.healthyLifeExpectancy2019, text: "Healthy life expectancy"},
+                {group: "FREEDOM", value: d.properties.freedomOfChoice2019, text: "Freedom of choice"},
+                {group: "GENEROSITY", value: d.properties.generosity2019, text: "Generosity"},
+                {group: "CORRUPTION", value: d.properties.perceptionsOfCorruption2019, text: "Perceptions of corruption"}
+              ];
+
+              var happiness2019 = d.properties.happinessScore2019;
+
+              var data2020 = [
+                {group: "GDP", value: d.properties.GDPperCapita2020, text: "GDP per capita"},
+                {group: "SUPPORT", value: d.properties.socialSupport2020, text: "Social support"},
+                {group: "HEALTH", value: d.properties.healthyLifeExpectancy2020, text: "Healthy life expectancy"},
+                {group: "FREEDOM", value: d.properties.freedomOfChoice2020, text: "Freedom of choice"},
+                {group: "GENEROSITY", value: d.properties.generosity2020, text: "Generosity"},
+                {group: "CORRUPTION", value: d.properties.perceptionsOfCorruption2020, text: "Perceptions of corruption"}
+              ];
+
+              var happiness2020 = d.properties.happinessScore2020;
+
+              var data2021 = [
+                {group: "GDP", value: d.properties.GDPperCapita2021, text: "GDP per capita"},
+                {group: "SUPPORT", value: d.properties.socialSupport2021, text: "Social support"},
+                {group: "HEALTH", value: d.properties.healthyLifeExpectancy2021, text: "Healthy life expectancy"},
+                {group: "FREEDOM", value: d.properties.freedomOfChoice2021, text: "Freedom of choice"},
+                {group: "GENEROSITY", value: d.properties.generosity2021, text: "Generosity"},
+                {group: "CORRUPTION", value: d.properties.perceptionsOfCorruption2021, text: "Perceptions of corruption"}
+              ];
+
+              var happiness2021 = d.properties.happinessScore2021;
+
+              var data2022 = [
+                {group: "GDP", value: d.properties.GDPperCapita2022, text: "GDP per capita"},
+                {group: "SUPPORT", value: d.properties.socialSupport2022, text: "Social support"},
+                {group: "HEALTH", value: d.properties.healthyLifeExpectancy2022, text: "Healthy life expectancy"},
+                {group: "FREEDOM", value: d.properties.freedomOfChoice2022, text: "Freedom of choice"},
+                {group: "GENEROSITY", value: d.properties.generosity2022, text: "Generosity"},
+                {group: "CORRUPTION", value: d.properties.perceptionsOfCorruption2022, text: "Perceptions of corruption"}
+              ];
+
+              var happiness2022 = d.properties.happinessScore2022;
+
+              var margin = {top: 30, right: 30, bottom: 70, left: 60},
+                  width = 550 - margin.left - margin.right,
+                  height = 400 - margin.top - margin.bottom;
+              
+              var svg = d3.select("#my_dataviz")
+                .append("svg")
+                  .attr("width", width + margin.left + margin.right)
+                  .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                  .attr("transform",
+                        "translate(" + margin.left + "," + margin.top + ")");
+              
+              var x = d3.scaleBand()
+                .range([ 0, width])
+                .domain(data2019.map(function(d) { return d.group; }))
+                .padding(0.2);
+              
+              svg.append("g")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x))
+
+              var y = d3.scaleLinear()
+                .domain([0, 2])
+                .range([ height, 0]);
+
+              svg.append("g")
+                .attr("class", "myYaxis")
+                .call(d3.axisLeft(y));
+
+              function update(data) {
+                
+                var u = svg.selectAll("rect")
+                  .data(data)
+
+                var tempYear=2019;
+                var happiness=happiness2019;
+                var textTitle="";
+
+                if(data==data2019){
+                  tempYear=2019;
+                  happiness=happiness2019;
+                  //https://gomakethings.com/converting-strings-to-numbers-with-vanilla-javascript/
+                  textTitle="Happiness score for " + countryName + " in " + tempYear.toString() + " is: " + happiness.toString();
+                }
+                if(data==data2020){
+                  tempYear=2020;
+                  happiness=happiness2020;
+                  textTitle="Happiness score for " + countryName + " in " + tempYear.toString() + " is: " + happiness.toString();
+                }
+
+                if(data==data2021){
+                  tempYear=2021;
+                  happiness=happiness2021;
+                  textTitle="Happiness score for " + countryName + " in " + tempYear.toString() + " is: " + happiness.toString();
+                }
+
+                if(data==data2022){
+                  tempYear=2022;
+                  happiness=happiness2022;
+                  textTitle="Happiness score for " + countryName + " in " + tempYear.toString() + " is: " + happiness.toString();
+                }
+
+                if((happiness2019 || happiness2020 || happiness2021 || happiness2022 ) == 0){
+                  textTitle="No data available for " + countryName + ", please try another country."
+                }
+
+                u.enter()
+                  .append("rect")
+                  .attr("class", "bar")
+                  .merge(u)
+                  .transition()
+                  .duration(700)
+                    .attr("x", function(d) { return x(d.group); })
+                    .attr("y", function(d) { return y(d.value); })
+                    .attr("width", x.bandwidth())
+                    .attr("height", function(d) { return height - y(d.value); })
+                    .attr("fill", "#0C508A");
+                    
+                u.on("mouseover", function(d){
+                        tooltip.style("visibility", "visible")
+                                .style("left", event.pageX+10+"px")
+                                .style("top", event.pageY-80+"px")
+                                .attr("x", d.value)
+                                .html(d.text + ": " + d.value)
+                    })
+                  .on("mousemove", function(){
+                      tooltip.style("left", event.pageX+10+"px")
+                    })
+                  .on("mouseout", function(){
+                      tooltip.style("visibility", "hidden")
+                    });
+
+                //http://www.d3noob.org/2013/01/adding-title-to-your-d3js-graph.html
+                d3.select("#ptitle")
+                  .text(textTitle); 
+
+              }
+              
+              update(data2019)
+              update(data2019)
+
+
+              //https://stackoverflow.com/questions/30305285/d3-js-change-data-on-button-click
+              d3.select('#btn1')
+                .on("click", function(d){
+                  update(data2019)
+              })
+
+              d3.select('#btn2')
+                .on("click", function(d){
+                  update(data2020)
+              })
+
+              d3.select('#btn3')
+                .on("click", function(d){
+                  update(data2021)
+              })
+
+              d3.select('#btn4')
+                .on("click", function(d){
+                  update(data2022)
+              })
+
+          })        
+          
+      }
+
+      //https://d3-graph-gallery.com/graph/custom_legend.html#cat2
+      //https://coolors.co/1cb5e0-19a1cf-168dbe-1379ad-10659c-0c508a-093c79-062868-031457-000046 
+      svg.append("circle").attr("cx",20).attr("cy",370).attr("r", 6).style("fill", "#1CB5E0")
+      svg.append("circle").attr("cx",20).attr("cy",389).attr("r", 6).style("fill", "#19A1CF")
+      svg.append("circle").attr("cx",20).attr("cy",408).attr("r", 6).style("fill", "#168DBE")
+      svg.append("circle").attr("cx",20).attr("cy",428).attr("r", 6).style("fill", "#1379AD")
+      svg.append("circle").attr("cx",20).attr("cy",448).attr("r", 6).style("fill", "#10659C")
+      svg.append("circle").attr("cx",20).attr("cy",468).attr("r", 6).style("fill", "#0C508A")
+      svg.append("circle").attr("cx",20).attr("cy",488).attr("r", 6).style("fill", "#093C79")
+      svg.append("circle").attr("cx",20).attr("cy",508).attr("r", 6).style("fill", "#062868")
+      svg.append("circle").attr("cx",20).attr("cy",528).attr("r", 6).style("fill", "#000046")
+      svg.append("circle").attr("cx",20).attr("cy",548).attr("r", 6).style("fill", "white")
+
+      svg.append("text").attr("x", 10).attr("y", 330).text("LEGEND-World Happines").style("font-size", "15px").attr("alignment-baseline","middle")
+      svg.append("text").attr("x", 10).attr("y", 350).text("Average score (2019-2020)").style("font-size", "15px").attr("alignment-baseline","middle")
+      svg.append("text").attr("x", 40).attr("y", 370).text("1-2").style("font-size", "15px").attr("alignment-baseline","middle")
+      svg.append("text").attr("x", 40).attr("y", 390).text("2-3").style("font-size", "15px").attr("alignment-baseline","middle")
+      svg.append("text").attr("x", 40).attr("y", 410).text("3-4").style("font-size", "15px").attr("alignment-baseline","middle")
+      svg.append("text").attr("x", 40).attr("y", 430).text("4-5").style("font-size", "15px").attr("alignment-baseline","middle")
+      svg.append("text").attr("x", 40).attr("y", 450).text("5-6").style("font-size", "15px").attr("alignment-baseline","middle")
+      svg.append("text").attr("x", 40).attr("y", 470).text("6-7").style("font-size", "15px").attr("alignment-baseline","middle")
+      svg.append("text").attr("x", 40).attr("y", 490).text("7-8").style("font-size", "15px").attr("alignment-baseline","middle")
+      svg.append("text").attr("x", 40).attr("y", 510).text("8-9").style("font-size", "15px").attr("alignment-baseline","middle")
+      svg.append("text").attr("x", 40).attr("y", 530).text("9-10").style("font-size", "15px").attr("alignment-baseline","middle")
+      svg.append("text").attr("x", 40).attr("y", 550).text("no data collected").style("font-size", "15px").attr("alignment-baseline","middle")
+
+    </script>
+    
+  </body>
+
+</html>
