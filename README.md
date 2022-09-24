@@ -3,9 +3,10 @@
 
 - The topic of this project task was to create a data visualization regarding the life happiness of citizens in different countries. Data used was collected in the time period from 2019 to 2022. The knowledge gained in the laboratory exercises from the course "Data Visualization" and additional knowledge gained via the Internet were used during the creation of this task.
 
+### Preview:
 <img src="https://raw.githubusercontent.com/TeaTurjak/VP-WorldHappiness/main/preview.PNG">
 
-### Used sources   
+### Used sources:
 - https://www.kaggle.com/
 - https://www.kaggle.com/datasets/mathurinache/world-happiness-report?select=2019.csv
 - https://www.convertcsv.com/csv-to-json.htm
